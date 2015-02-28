@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef APR_MEMCACHE_H
-#define APR_MEMCACHE_H
-
 /**
- * @file apr_memcache.h
- * @brief Client interface for memcached
- * @remark To use this interface you must have a separate memcached
- * server running. See the memcached website at http://www.danga.com/memcached/
+ * @file apr_redis.h
+ * @brief Client interface for redis
+ * @remark To use this interface you must have a separate redis
  * for more information.
  */
+
+#ifndef APR_REDIS_H
+#define APR_REDIS_H
+
+#include "httpd.h"
+#include "http_config.h"
+#include "http_protocol.h"
+#include "http_log.h"
 
 #include "apr.h"
 #include "apr_pools.h"
@@ -39,167 +43,175 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define MC_KEY_LEN 254
+
+#ifndef MC_DEFAULT_SERVER_PORT
+#define MC_DEFAULT_SERVER_PORT 6379
+#endif
+
+#ifndef MC_DEFAULT_SERVER_MIN
+#define MC_DEFAULT_SERVER_MIN 0
+#endif
+
+#ifndef MC_DEFAULT_SERVER_SMAX
+#define MC_DEFAULT_SERVER_SMAX 1
+#endif
+
+#ifndef MC_DEFAULT_SERVER_TTL
+#define MC_DEFAULT_SERVER_TTL 600
+#endif
+
 /**
- * @defgroup APR_Util_MC Memcached Client Routines
+ * @defgroup APR_Util_MC Redis Client Routines
  * @ingroup APR_Util
  * @{
  */
 
-/** Specifies the status of a memcached server */
+/** Specifies the status of a redis server */
 typedef enum
 {
     APR_MC_SERVER_LIVE, /**< Server is alive and responding to requests */
     APR_MC_SERVER_DEAD  /**< Server is not responding to requests */
-} apr_memcache_server_status_t;
+} apr_redis_server_status_t;
 
-/** Opaque memcache client connection object */
-typedef struct apr_memcache_conn_t apr_memcache_conn_t;
+/** Opaque redis client connection object */
+typedef struct apr_redis_conn_t apr_redis_conn_t;
 
-/** Memcache Server Info Object */
-typedef struct apr_memcache_server_t apr_memcache_server_t;
-struct apr_memcache_server_t
+/** Redis Server Info Object */
+typedef struct apr_redis_server_t apr_redis_server_t;
+struct apr_redis_server_t
 {
     const char *host; /**< Hostname of this Server */
     apr_port_t port; /**< Port of this Server */
-    apr_memcache_server_status_t status; /**< @see apr_memcache_server_status_t */
+    apr_redis_server_status_t status; /**< @see apr_redis_server_status_t */
 #if APR_HAS_THREADS || defined(DOXYGEN)
     apr_reslist_t *conns; /**< Resource list of actual client connections */
 #else
-    apr_memcache_conn_t *conn;
+    apr_redis_conn_t *conn;
 #endif
     apr_pool_t *p; /** Pool to use for private allocations */
 #if APR_HAS_THREADS
     apr_thread_mutex_t *lock;
 #endif
     apr_time_t btime;
+    apr_uint32_t readwrite_timeout;
 };
+
+typedef struct apr_redis_t apr_redis_t;
 
 /* Custom hash callback function prototype, user for server selection.
 * @param baton user selected baton
 * @param data data to hash
 * @param data_len length of data
 */
-typedef apr_uint32_t (*apr_memcache_hash_func)(void *baton,
+typedef apr_uint32_t (*apr_redis_hash_func)(void *baton,
                                                const char *data,
                                                const apr_size_t data_len);
-
-typedef struct apr_memcache_t apr_memcache_t;
-
 /* Custom Server Select callback function prototype.
 * @param baton user selected baton
-* @param mc memcache instance, use mc->live_servers to select a node
+* @param mc redis instance, use mc->live_servers to select a node
 * @param hash hash of the selected key.
 */
-typedef apr_memcache_server_t* (*apr_memcache_server_func)(void *baton,
-                                                 apr_memcache_t *mc,
+typedef apr_redis_server_t* (*apr_redis_server_func)(void *baton,
+                                                 apr_redis_t *mc,
                                                  const apr_uint32_t hash);
 
-/** Container for a set of memcached servers */
-struct apr_memcache_t
+/** Container for a set of redis servers */
+struct apr_redis_t
 {
     apr_uint32_t flags; /**< Flags, Not currently used */
     apr_uint16_t nalloc; /**< Number of Servers Allocated */
     apr_uint16_t ntotal; /**< Number of Servers Added */
-    apr_memcache_server_t **live_servers; /**< Array of Servers */
+    apr_redis_server_t **live_servers; /**< Array of Servers */
     apr_pool_t *p; /** Pool to use for allocations */
     void *hash_baton;
-    apr_memcache_hash_func hash_func;
+    apr_redis_hash_func hash_func;
     void *server_baton;
-    apr_memcache_server_func server_func;
+    apr_redis_server_func server_func;
 };
-
-/** Returned Data from a multiple get */
-typedef struct
-{
-    apr_status_t status;
-    const char* key;
-    apr_size_t len;
-    char *data;
-    apr_uint16_t flags;
-} apr_memcache_value_t;
 
 /**
  * Creates a crc32 hash used to split keys between servers
- * @param mc The memcache client object to use
+ * @param mc The redis client object to use
  * @param data Data to be hashed
  * @param data_len Length of the data to use
  * @return crc32 hash of data
- * @remark The crc32 hash is not compatible with old memcached clients.
+ * @remark The crc32 hash is not compatible with old redisd clients.
  */
-APU_DECLARE(apr_uint32_t) apr_memcache_hash(apr_memcache_t *mc,
+APU_DECLARE(apr_uint32_t) apr_redis_hash(apr_redis_t *mc,
                                             const char *data,
                                             const apr_size_t data_len);
 
 /**
  * Pure CRC32 Hash. Used by some clients.
  */
-APU_DECLARE(apr_uint32_t) apr_memcache_hash_crc32(void *baton,
+APU_DECLARE(apr_uint32_t) apr_redis_hash_crc32(void *baton,
                                                   const char *data,
                                                   const apr_size_t data_len);
 
 /**
  * hash compatible with the standard Perl Client.
  */
-APU_DECLARE(apr_uint32_t) apr_memcache_hash_default(void *baton,
+APU_DECLARE(apr_uint32_t) apr_redis_hash_default(void *baton,
                                                     const char *data,
                                                     const apr_size_t data_len);
 
 /**
  * Picks a server based on a hash
- * @param mc The memcache client object to use
+ * @param mc The redis client object to use
  * @param hash Hashed value of a Key
  * @return server that controls specified hash
- * @see apr_memcache_hash
+ * @see apr_redis_hash
  */
-APU_DECLARE(apr_memcache_server_t *) apr_memcache_find_server_hash(apr_memcache_t *mc,
+APU_DECLARE(apr_redis_server_t *) apr_redis_find_server_hash(apr_redis_t *mc,
                                                                    const apr_uint32_t hash);
 
 /**
  * server selection compatible with the standard Perl Client.
  */
-APU_DECLARE(apr_memcache_server_t *) apr_memcache_find_server_hash_default(void *baton,
-                                                                           apr_memcache_t *mc, 
+APU_DECLARE(apr_redis_server_t *) apr_redis_find_server_hash_default(void *baton,
+                                                                           apr_redis_t *mc, 
                                                                            const apr_uint32_t hash);
 
 /**
  * Adds a server to a client object
- * @param mc The memcache client object to use
+ * @param mc The redis client object to use
  * @param server Server to add
  * @remark Adding servers is not thread safe, and should be done once at startup.
  * @warning Changing servers after startup may cause keys to go to
  * different servers.
  */
-APU_DECLARE(apr_status_t) apr_memcache_add_server(apr_memcache_t *mc,
-                                                  apr_memcache_server_t *server);
+APU_DECLARE(apr_status_t) apr_redis_add_server(apr_redis_t *mc,
+                                                  apr_redis_server_t *server);
 
 
 /**
  * Finds a Server object based on a hostname/port pair
- * @param mc The memcache client object to use
+ * @param mc The redis client object to use
  * @param host Hostname of the server
  * @param port Port of the server
  * @return Server with matching Hostname and Port, or NULL if none was found.
  */
-APU_DECLARE(apr_memcache_server_t *) apr_memcache_find_server(apr_memcache_t *mc,
+APU_DECLARE(apr_redis_server_t *) apr_redis_find_server(apr_redis_t *mc,
                                                               const char *host,
                                                               apr_port_t port);
 
 /**
  * Enables a Server for use again
- * @param mc The memcache client object to use
+ * @param mc The redis client object to use
  * @param ms Server to Activate
  */
-APU_DECLARE(apr_status_t) apr_memcache_enable_server(apr_memcache_t *mc,
-                                                     apr_memcache_server_t *ms);
+APU_DECLARE(apr_status_t) apr_redis_enable_server(apr_redis_t *mc,
+                                                     apr_redis_server_t *ms);
 
 
 /**
  * Disable a Server
- * @param mc The memcache client object to use
+ * @param mc The redis client object to use
  * @param ms Server to Disable
  */
-APU_DECLARE(apr_status_t) apr_memcache_disable_server(apr_memcache_t *mc,
-                                                      apr_memcache_server_t *ms);
+APU_DECLARE(apr_status_t) apr_redis_disable_server(apr_redis_t *mc,
+                                                      apr_redis_server_t *ms);
 
 /**
  * Creates a new Server Object
@@ -214,25 +226,26 @@ APU_DECLARE(apr_status_t) apr_memcache_disable_server(apr_memcache_t *mc,
  * @see apr_reslist_create
  * @remark min, smax, and max are only used when APR_HAS_THREADS
  */
-APU_DECLARE(apr_status_t) apr_memcache_server_create(apr_pool_t *p,
+APU_DECLARE(apr_status_t) apr_redis_server_create(apr_pool_t *p,
                                                      const char *host,
                                                      apr_port_t port,
                                                      apr_uint32_t min,
                                                      apr_uint32_t smax,
                                                      apr_uint32_t max,
                                                      apr_uint32_t ttl,
-                                                     apr_memcache_server_t **ns);
+                                                     apr_uint32_t readwrite_timeout,
+                                                     apr_redis_server_t **ns);
 /**
- * Creates a new memcached client object
+ * Creates a new redisd client object
  * @param p Pool to use
  * @param max_servers maximum number of servers
  * @param flags Not currently used
- * @param mc   location of the new memcache client object
+ * @param mc   location of the new redis client object
  */
-APU_DECLARE(apr_status_t) apr_memcache_create(apr_pool_t *p,
+APU_DECLARE(apr_status_t) apr_redis_create(apr_pool_t *p,
                                               apr_uint16_t max_servers,
                                               apr_uint32_t flags,
-                                              apr_memcache_t **mc);
+                                              apr_redis_t **mc);
 
 /**
  * Gets a value from the server, allocating the value out of p
@@ -244,40 +257,12 @@ APU_DECLARE(apr_status_t) apr_memcache_create(apr_pool_t *p,
  * @param flags any flags set by the client for this key
  * @return 
  */
-APU_DECLARE(apr_status_t) apr_memcache_getp(apr_memcache_t *mc, 
+APU_DECLARE(apr_status_t) apr_redis_getp(apr_redis_t *mc, 
                                             apr_pool_t *p,
                                             const char* key,
                                             char **baton,
                                             apr_size_t *len,
                                             apr_uint16_t *flags);
-
-
-/**
- * Add a key to a hash for a multiget query
- *  if the hash (*value) is NULL it will be created
- * @param data_pool pool from where the hash and their items are created from
- * @param key null terminated string containing the key
- * @param values hash of keys and values that this key will be added to
- * @return
- */
-APU_DECLARE(void) apr_memcache_add_multget_key(apr_pool_t *data_pool,
-                                               const char* key,
-                                               apr_hash_t **values);
-
-/**
- * Gets multiple values from the server, allocating the values out of p
- * @param mc client to use
- * @param temp_pool Pool used for temporary allocations. May be cleared inside this
- *        call.
- * @param data_pool Pool used to allocate data for the returned values.
- * @param values hash of apr_memcache_value_t keyed by strings, contains the
- *        result of the multiget call.
- * @return
- */
-APU_DECLARE(apr_status_t) apr_memcache_multgetp(apr_memcache_t *mc,
-                                                apr_pool_t *temp_pool,
-                                                apr_pool_t *data_pool,
-                                                apr_hash_t *values);
 
 /**
  * Sets a value by key on the server
@@ -288,92 +273,22 @@ APU_DECLARE(apr_status_t) apr_memcache_multgetp(apr_memcache_t *mc,
  * @param timeout time in seconds for the data to live on the server
  * @param flags any flags set by the client for this key
  */
-APU_DECLARE(apr_status_t) apr_memcache_set(apr_memcache_t *mc,
+APU_DECLARE(apr_status_t) apr_redis_setex(apr_redis_t *mc,
                                            const char *key,
                                            char *baton,
                                            const apr_size_t data_size,
                                            apr_uint32_t timeout,
                                            apr_uint16_t flags);
 
-/**
- * Adds value by key on the server
- * @param mc client to use
- * @param key   null terminated string containing the key
- * @param baton data to store on the server
- * @param data_size   length of data at baton
- * @param timeout time for the data to live on the server
- * @param flags any flags set by the client for this key
- * @return APR_SUCCESS if the key was added, APR_EEXIST if the key 
- * already exists on the server.
- */
-APU_DECLARE(apr_status_t) apr_memcache_add(apr_memcache_t *mc,
-                                           const char *key,
-                                           char *baton,
-                                           const apr_size_t data_size,
-                                           apr_uint32_t timeout,
-                                           apr_uint16_t flags);
-
-/**
- * Replaces value by key on the server
- * @param mc client to use
- * @param key   null terminated string containing the key
- * @param baton data to store on the server
- * @param data_size   length of data at baton
- * @param timeout time for the data to live on the server
- * @param flags any flags set by the client for this key
- * @return APR_SUCCESS if the key was added, APR_EEXIST if the key 
- * did not exist on the server.
- */
-APU_DECLARE(apr_status_t) apr_memcache_replace(apr_memcache_t *mc,
-                                               const char *key,
-                                               char *baton,
-                                               const apr_size_t data_size,
-                                               apr_uint32_t timeout,
-                                               apr_uint16_t flags);
 /**
  * Deletes a key from a server
  * @param mc client to use
  * @param key   null terminated string containing the key
  * @param timeout time for the delete to stop other clients from adding
  */
-APU_DECLARE(apr_status_t) apr_memcache_delete(apr_memcache_t *mc,
+APU_DECLARE(apr_status_t) apr_redis_delete(apr_redis_t *mc,
                                               const char *key,
                                               apr_uint32_t timeout);
-
-/**
- * Increments a value
- * @param mc client to use
- * @param key   null terminated string containing the key
- * @param n     number to increment by
- * @param nv    new value after incrementing
- */
-APU_DECLARE(apr_status_t) apr_memcache_incr(apr_memcache_t *mc, 
-                                            const char *key,
-                                            apr_int32_t n,
-                                            apr_uint32_t *nv);
-
-/**
- * Decrements a value
- * @param mc client to use
- * @param key   null terminated string containing the key
- * @param n     number to decrement by
- * @param new_value    new value after decrementing
- */
-APU_DECLARE(apr_status_t) apr_memcache_decr(apr_memcache_t *mc, 
-                                            const char *key,
-                                            apr_int32_t n,
-                                            apr_uint32_t *new_value);
-
-/**
- * Query a server's version
- * @param ms    server to query
- * @param p     Pool to allocate answer from
- * @param baton location to store server version string
- * @param len   length of the server version string
- */
-APU_DECLARE(apr_status_t) apr_memcache_version(apr_memcache_server_t *ms,
-                                               apr_pool_t *p,
-                                               char **baton);
 
 typedef struct
 {
@@ -422,18 +337,7 @@ typedef struct
     apr_uint32_t limit_maxbytes;
     /** Number of threads the server is running (if built with threading) */
     apr_uint32_t threads; 
-} apr_memcache_stats_t;
-
-/**
- * Query a server for statistics
- * @param ms    server to query
- * @param p     Pool to allocate answer from
- * @param stats location of the new statistics structure
- */
-APU_DECLARE(apr_status_t) apr_memcache_stats(apr_memcache_server_t *ms, 
-                                             apr_pool_t *p,
-                                             apr_memcache_stats_t **stats);
-
+} apr_redis_stats_t;
 
 /** @} */
 
@@ -441,4 +345,4 @@ APU_DECLARE(apr_status_t) apr_memcache_stats(apr_memcache_server_t *ms,
 }
 #endif
 
-#endif /* APR_MEMCACHE_H */
+#endif /* APR_REDIS_H */
