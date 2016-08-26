@@ -604,6 +604,12 @@ apr_redis_setex(apr_redis_t *mc,
     apr_size_t written;
     const int VEC_SIZE = 11;
     struct iovec vec[11];
+    int index = 0;
+    char keysize_str[MC_KEY_LEN];
+    char expire_str[MC_KEY_LEN];
+    char expiresize_str[MC_KEY_LEN];
+    char datasize_str[BUFFER_SIZE];
+    apr_size_t expire_len;
 
     apr_size_t klen = strlen(key);
 
@@ -628,7 +634,6 @@ apr_redis_setex(apr_redis_t *mc,
     }
 
     /* *3\r\n$3\r\nsetex\r\n$<klen>\r\n<key>\r\n$<datalen>\r\n<data>\r\n */
-    int index = 0;
     vec[index].iov_base = MC_SETEX_START;
     vec[index].iov_len  = MC_SETEX_START_LEN;
     index++;
@@ -640,7 +645,6 @@ apr_redis_setex(apr_redis_t *mc,
     vec[index].iov_len  = MC_SETEX_LEN;
     index++;
 
-    char keysize_str[MC_KEY_LEN];
     sprintf(keysize_str, "$%zu\r\n", klen);
     vec[index].iov_base = keysize_str;
     vec[index].iov_len  = strlen(keysize_str);
@@ -652,10 +656,8 @@ apr_redis_setex(apr_redis_t *mc,
     vec[index].iov_len  = MC_EOL_LEN;
     index++;
 
-    char expire_str[MC_KEY_LEN];
-    char expiresize_str[MC_KEY_LEN];
     sprintf(expire_str, "%u\r\n", timeout);
-    apr_size_t expire_len = strlen(expire_str);
+    expire_len = strlen(expire_str);
     sprintf(expiresize_str, "$%zu\r\n", expire_len-2);
     vec[index].iov_base = (void*)expiresize_str;
     vec[index].iov_len  = strlen(expiresize_str);
@@ -664,7 +666,6 @@ apr_redis_setex(apr_redis_t *mc,
     vec[index].iov_len  = expire_len;
     index++;
 
-    char datasize_str[BUFFER_SIZE];
     sprintf(datasize_str, "$%zu\r\n", data_size);
     vec[index].iov_base = datasize_str;
     vec[index].iov_len  = strlen(datasize_str);
@@ -721,6 +722,8 @@ apr_redis_getp(apr_redis_t *mc,
     apr_size_t klen = strlen(key);
     const int VEC_SIZE = 6;
     struct iovec vec[6];
+    int index = 0;
+    char keysize_str[MC_KEY_LEN];
 
     hash = apr_redis_hash(mc, key, klen);
     ms = apr_redis_find_server_hash(mc, hash);
@@ -735,7 +738,6 @@ apr_redis_getp(apr_redis_t *mc,
     }
 
     /* *2\r\nget\r\nkey\r\n */
-    int index = 0;
     vec[index].iov_base = MC_GET_START;
     vec[index].iov_len  = MC_GET_START_LEN;
     index++;
@@ -747,7 +749,6 @@ apr_redis_getp(apr_redis_t *mc,
     vec[index].iov_len  = MC_GET_LEN;
     index++;
 
-    char keysize_str[MC_KEY_LEN];
     sprintf(keysize_str, "$%zu\r\n", klen);
     vec[index].iov_base = keysize_str;
     vec[index].iov_len  = strlen(keysize_str);
@@ -847,6 +848,8 @@ apr_redis_delete(apr_redis_t *mc,
     const int VEC_SIZE = 6;
     struct iovec vec[6];
     apr_size_t klen = strlen(key);
+    int index = 0;
+    char keysize_str[MC_KEY_LEN];
 
     hash = apr_redis_hash(mc, key, klen);
     ms = apr_redis_find_server_hash(mc, hash);
@@ -861,7 +864,6 @@ apr_redis_delete(apr_redis_t *mc,
     }
 
     /* *2\r\ndel\r\n<key>\r\n */
-    int index = 0;
     vec[index].iov_base = MC_DEL_START;
     vec[index].iov_len  = MC_DEL_START_LEN;
     index++;
@@ -873,7 +875,6 @@ apr_redis_delete(apr_redis_t *mc,
     vec[index].iov_len  = MC_DEL_LEN;
     index++;
 
-    char keysize_str[MC_KEY_LEN];
     sprintf(keysize_str, "$%zu\r\n", klen);
     vec[index].iov_base = keysize_str;
     vec[index].iov_len  = strlen(keysize_str);
@@ -921,6 +922,7 @@ apr_status_t mc_ping(apr_redis_server_t *ms)
     const int VEC_SIZE = 2;
     struct iovec vec[2];
     apr_redis_conn_t *conn;
+    int index = 0;
 
     rv = ms_find_conn(ms, &conn);
 
@@ -929,7 +931,6 @@ apr_status_t mc_ping(apr_redis_server_t *ms)
     }
 
     /* ping\r\n */
-    int index = 0;
     vec[index].iov_base = MC_PING;
     vec[index].iov_len  = MC_PING_LEN;
     index++;
