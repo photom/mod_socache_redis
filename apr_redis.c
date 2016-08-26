@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "apu.h"          /* for APU_DECLARE */
 #include "apr_redis.h"
 #include "apr_poll.h"
 #include "apr_version.h"
@@ -602,7 +603,7 @@ apr_redis_setex(apr_redis_t *mc,
     apr_status_t rv;
     apr_size_t written;
     const int VEC_SIZE = 11;
-    struct iovec vec[VEC_SIZE];
+    struct iovec vec[11];
 
     apr_size_t klen = strlen(key);
 
@@ -719,7 +720,7 @@ apr_redis_getp(apr_redis_t *mc,
     apr_size_t written;
     apr_size_t klen = strlen(key);
     const int VEC_SIZE = 6;
-    struct iovec vec[VEC_SIZE];
+    struct iovec vec[6];
 
     hash = apr_redis_hash(mc, key, klen);
     ms = apr_redis_find_server_hash(mc, hash);
@@ -844,7 +845,7 @@ apr_redis_delete(apr_redis_t *mc,
     apr_uint32_t hash;
     apr_size_t written;
     const int VEC_SIZE = 6;
-    struct iovec vec[VEC_SIZE];
+    struct iovec vec[6];
     apr_size_t klen = strlen(key);
 
     hash = apr_redis_hash(mc, key, klen);
@@ -918,7 +919,7 @@ apr_status_t mc_ping(apr_redis_server_t *ms)
     apr_status_t rv;
     apr_size_t written;
     const int VEC_SIZE = 2;
-    struct iovec vec[VEC_SIZE];
+    struct iovec vec[2];
     apr_redis_conn_t *conn;
 
     rv = ms_find_conn(ms, &conn);
