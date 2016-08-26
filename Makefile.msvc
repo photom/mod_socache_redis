@@ -9,13 +9,15 @@
 NAME = mod_socache_redis
 
 CC = cl
+RC = rc
 LINKER = link -nologo
 MT = mt /nologo
 DEFS = /nologo /O2 /MD /W3 -DAPU_DECLARE_STATIC
-DEPS = kernel32.lib libhttpd.lib libapr-1.lib libaprutil-1.lib /libpath:"%APACHE%\lib"
+DEPS = kernel32.lib libhttpd.lib libapr-1.lib libaprutil-1.lib $(NAME).res /libpath:"%APACHE%\lib"
 
 !IF "$(ARCH)" == "x64"
 LFLAGS = /machine:X64
+RDEFS = -d _WIN64
 !ELSE
 LFLAGS = /machine:X86
 !ENDIF
@@ -30,6 +32,7 @@ OBJS = apr_redis.obj mod_socache_redis.obj
 
 .c.obj:
 	$(CC) $(DEFINES) -c $< -Fo$@
+	$(RC) $(RDEFS) $(NAME).rc
 
 all: $(OUTFILE)
 
