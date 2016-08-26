@@ -34,7 +34,7 @@ OBJS = apr_redis.obj mod_socache_redis.obj
 all: $(OUTFILE)
 
 $(OUTFILE): $(OBJS)
-	$(LINKER) /dll $(DEPS) $(LFLAGS) /manifest /OUT:$(OUTFILE) $(OBJS) $(NAME).res 
+	$(LINKER) /dll $(DEPS) $(LFLAGS) /manifest /OUT:$(OUTFILE) $(OBJS)
   !IF EXIST $(OUTFILE).manifest $(MT) -manifest $(OUTFILE).manifest \
                                         -outputresource:$(OUTFILE);2
 clean:
