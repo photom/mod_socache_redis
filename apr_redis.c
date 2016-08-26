@@ -18,7 +18,7 @@
 #include "apr_poll.h"
 #include "apr_version.h"
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 
 #define BUFFER_SIZE 512
 struct apr_redis_conn_t
