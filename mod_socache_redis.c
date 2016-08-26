@@ -350,7 +350,7 @@ static const command_rec mod_socache_redis_cmds[] =
                   socache_redis_set_readwritetimeout,
                   NULL,
                   ACCESS_CONF | RSRC_CONF,
-                  "SSLSessionCacheRedisReadTimeout (int)."
+                  "SSLSessionCacheRedisReadWriteTimeout (int)."
                   ),
     {NULL}
 };
