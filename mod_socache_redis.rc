@@ -1,6 +1,10 @@
 /* RC File by Gregg Smith August 26, 2016 */
 #include "version.h"
 
+#ifndef MSVC_COMPILER
+#define MSVC_COMPILER ""
+#endif
+
 #ifdef _WIN64
 #define PLATFORM "Win64"
 #else
@@ -15,7 +19,7 @@
 #define APR_STRINGIFY_HELPER(n) #n
 #endif
 
-//#define RC_COMPANY_NAME            "The Apache Haus"
+#define RC_COMMENTS                PLATFORM " " MSVC_COMPILER " build" 
 
 #define RC_ORIGINAL_AUTHOR         "photom"
 #define RC_ORIGINAL_AUTHOR_COMPANY "Original source by " RC_ORIGINAL_AUTHOR
@@ -72,6 +76,7 @@ BEGIN
   BEGIN
     BLOCK "040904b0"
     BEGIN
+      VALUE "Comments", RC_COMMENTS "\0"
       VALUE "CompanyName", RC_ORIGINAL_AUTHOR_COMPANY "\0"
       VALUE "FileDescription", RC_FILE_DESCRIPTION_STR "\0"
       VALUE "FileVersion", RC_FILE_VERSION_STR "\0"
