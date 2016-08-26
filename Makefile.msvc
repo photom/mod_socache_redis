@@ -10,14 +10,11 @@ NAME = mod_socache_redis
 
 CC = cl
 LINKER = link -nologo
-RC = rc
 MT = mt /nologo
 DEFS = /nologo /O2 /MD /W3 -DAPU_DECLARE_STATIC
-DEPS = kernel32.lib libhttpd.lib libapr-1.lib libaprutil-1.lib $(NAME).res /libpath:"%APACHE%\lib"
-RCDEFS = -r
+DEPS = kernel32.lib libhttpd.lib libapr-1.lib libaprutil-1.lib /libpath:"%APACHE%\lib"
 
 !IF "$(ARCH)" == "x64"
-RCDEFS = $(RCDEFS) -D_WIN64
 LFLAGS = /machine:X64
 !ELSE
 LFLAGS = /machine:X86
@@ -25,7 +22,6 @@ LFLAGS = /machine:X86
 
 INCLUDES = -I $(APACHE)\include 
 OUTFILE = $(NAME).so
-RESOURCE = $(NAME).rc
 
 DEFINES= $(DEFS) $(INCLUDES) 
 
@@ -34,14 +30,13 @@ OBJS = apr_redis.obj mod_socache_redis.obj
 
 .c.obj:
 	$(CC) $(DEFINES) -c $< -Fo$@
-	$(RC) $(RCVARS) $(RESOURCE)
 
 all: $(OUTFILE)
 
 $(OUTFILE): $(OBJS)
 	$(LINKER) /dll $(DEPS) $(LFLAGS) /manifest /OUT:$(OUTFILE) $(OBJS) $(NAME).res 
-  !IF EXIST $(LIBRARY).manifest $(MT) -manifest $(LIBRARY).manifest \
-                                        -outputresource:$(LIBRARY);2
+  !IF EXIST $(OUTFILE).manifest $(MT) -manifest $(OUTFILE).manifest \
+                                        -outputresource:$(OUTFILE);2
 clean:
 	del $(OBJS) $(OUT) *.lib *.exp *.manifest
 
