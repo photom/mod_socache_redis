@@ -1,0 +1,47 @@
+##----------------------------------------------------------------------------
+# Created on Fri Aug 26 00:54:07 2016
+# Usage:
+# nmake /f makefile.msvc apache=C:\path\to\apache
+# nmake /f makefile.msvc apache=C:\path\to\apache arch=x64
+# nmake /f makefile.msvc clean
+# 
+##----------------------------------------------------------------------------
+NAME = mod_socache_redis
+
+CC = cl
+LINKER = link -nologo
+RC = rc
+MT = mt /nologo
+DEFS = /nologo /O2 /MD /W3 -DAPU_DECLARE_STATIC
+DEPS = kernel32.lib libhttpd.lib libapr-1.lib libaprutil-1.lib $(NAME).res /libpath:"%APACHE%\lib"
+RCDEFS = -r
+
+!IF "$(ARCH)" == "x64"
+RCDEFS = $(RCDEFS) -D_WIN64
+LFLAGS = /machine:X64
+!ELSE
+LFLAGS = /machine:X86
+!ENDIF
+
+INCLUDES = -I $(APACHE)\include 
+OUTFILE = $(NAME).so
+RESOURCE = $(NAME).rc
+
+DEFINES= $(DEFS) $(INCLUDES) 
+
+SRCS = apr_redis.c mod_socache_redis.c 
+OBJS = apr_redis.obj mod_socache_redis.obj 
+
+.c.obj:
+	$(CC) $(DEFINES) -c $< -Fo$@
+	$(RC) $(RCVARS) $(RESOURCE)
+
+all: $(OUTFILE)
+
+$(OUTFILE): $(OBJS)
+	$(LINKER) /dll $(DEPS) $(LFLAGS) /manifest /OUT:$(OUTFILE) $(OBJS) $(NAME).res 
+  !IF EXIST $(LIBRARY).manifest $(MT) -manifest $(LIBRARY).manifest \
+                                        -outputresource:$(LIBRARY);2
+clean:
+	del $(OBJS) $(OUT) *.lib *.exp *.manifest
+
