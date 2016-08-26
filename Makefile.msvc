@@ -1,5 +1,5 @@
 ##----------------------------------------------------------------------------
-# Created on Fri Aug 26 00:54:07 2016
+# Created by Gregg Smith on Fri Aug 26 00:54:07 2016
 # Usage:
 # nmake /f makefile.msvc apache=C:\path\to\apache
 # nmake /f makefile.msvc apache=C:\path\to\apache arch=x64
