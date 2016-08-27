@@ -38,6 +38,10 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef APLOG_USE_MODULE
+APLOG_USE_MODULE(socache_redis);
+#endif 
+
 #define DEFAULT_SESSION_TIMEOUT   300
 #define DEFAULT_READWRITE_TIMEOUT 5
 

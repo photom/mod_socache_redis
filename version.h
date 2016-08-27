@@ -18,7 +18,7 @@
 
 #define MOD_SOCACHE_REDIS_VERSION_MAJOR               0
 #define MOD_SOCACHE_REDIS_VERSION_MINOR               0
-#define MOD_SOCACHE_REDIS_VERSION_REVISION            16
+#define MOD_SOCACHE_REDIS_VERSION_REVISION            17
 
 /* With all the different binary packages from third parties available 
  * using many different versions of Visual C++, it would be nice to
