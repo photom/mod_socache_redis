@@ -1,0 +1,53 @@
+##############################################################################
+# Created by Gregg Smith on Thursday, August 25, 2016                        #
+# Usage:                                                                     #
+# nmake /f makefile.msvc vc=VCVER apache=C:\path\to\apache          (32 bit) #
+# nmake /f makefile.msvc vc=VCVER apache=C:\path\to\apache arch=x64 (64 bit) #
+# nmake /f makefile.msvc clean                                               #
+#                                                                            #
+# VCVER can be one of  6, 7, 71, 8, 9, 10, 11, 12, 14 or 15                  #
+# Note: use 71 for Visual C++ .Net 2003  (VC7.1)                             #
+#                                                                            #
+##############################################################################
+NAME = mod_socache_redis
+
+CC = cl
+RC = rc
+LINKER = link -nologo
+MT = mt /nologo
+DEFS = /nologo /O2 /MD /W3 -DAPU_DECLARE_STATIC
+DEPS = kernel32.lib libhttpd.lib libapr-1.lib libaprutil-1.lib $(NAME).res /libpath:"%APACHE%\lib"
+
+!IF "$(VC)" != ""
+RDEFS = /d VCVER=$(VC)
+!ENDIF
+
+!IF "$(ARCH)" == "x64"
+LFLAGS = /machine:X64
+RDEFS = $(RDEFS) -d _WIN64
+!ELSE
+LFLAGS = /machine:X86
+RDEFS =  $(RDEFS) -d _WIN32
+!ENDIF
+
+INCLUDES = -I $(APACHE)\include 
+OUTFILE = $(NAME).so
+
+DEFINES= $(DEFS) $(INCLUDES) 
+
+SRCS = apr_redis.c mod_socache_redis.c 
+OBJS = apr_redis.obj mod_socache_redis.obj 
+
+.c.obj:
+	$(CC) $(DEFINES) -c $< -Fo$@
+	$(RC) $(RDEFS) $(NAME).rc
+
+all: $(OUTFILE)
+
+$(OUTFILE): $(OBJS)
+	$(LINKER) /dll $(DEPS) $(LFLAGS) /manifest /OUT:$(OUTFILE) $(OBJS)
+  !IF EXIST $(OUTFILE).manifest $(MT) -manifest $(OUTFILE).manifest \
+                                        -outputresource:$(OUTFILE);2
+clean:
+	del $(OBJS) $(OUTFILE) $(NAME).res $(NAME).lib $(NAME).exp $(NAME).*.manifest
+

@@ -38,6 +38,10 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef APLOG_USE_MODULE
+APLOG_USE_MODULE(socache_redis);
+#endif 
+
 #define DEFAULT_SESSION_TIMEOUT   300
 #define DEFAULT_READWRITE_TIMEOUT 5
 
@@ -227,11 +231,12 @@ static apr_status_t socache_mc_store(ap_socache_instance_t *ctx, server_rec *s,
 {
     char buf[MC_KEY_LEN];
     apr_status_t rv;
+    apr_uint32_t timeout;
 
     if (socache_mc_id2key(ctx, id, idlen, buf, sizeof(buf))) {
         return APR_EINVAL;
     }
-    apr_uint32_t timeout = apr_time_sec(expiry - apr_time_now());
+    timeout = apr_time_sec(expiry - apr_time_now());
     if (timeout <= 0) {
         timeout = DEFAULT_SESSION_TIMEOUT;
         ap_log_error(APLOG_MARK, APLOG_NOERRNO|APLOG_NOTICE, APR_SUCCESS, s, "set default timeout:%u", timeout);
@@ -350,7 +355,7 @@ static const command_rec mod_socache_redis_cmds[] =
                   socache_redis_set_readwritetimeout,
                   NULL,
                   ACCESS_CONF | RSRC_CONF,
-                  "SSLSessionCacheRedisReadTimeout (int)."
+                  "SSLSessionCacheRedisReadWriteTimeout [seconds]."
                   ),
     {NULL}
 };

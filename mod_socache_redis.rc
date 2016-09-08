@@ -1,0 +1,94 @@
+/* RC File by Gregg Smith August 26, 2016 */
+#include "version.h"
+
+#ifndef MSVC_COMPILER
+#define MSVC_COMPILER ""
+#endif
+
+#ifdef _WIN64
+#define PLATFORM "Win64"
+#else
+#define PLATFORM "Win32"
+#endif
+
+/* APR_STRINGIFY is defined here, and also in apr_general.h, so wrap it */
+#ifndef APR_STRINGIFY
+/** Properly quote a value as a string in the C preprocessor */
+#define APR_STRINGIFY(n) APR_STRINGIFY_HELPER(n)
+/** Helper macro for APR_STRINGIFY */
+#define APR_STRINGIFY_HELPER(n) #n
+#endif
+
+#define RC_COMMENTS                PLATFORM " " MSVC_COMPILER " build" 
+
+#define RC_ORIGINAL_AUTHOR         "photom"
+#define RC_ORIGINAL_AUTHOR_COMPANY "Original source by " RC_ORIGINAL_AUTHOR
+#define RC_AUTHOR_COPYRIGHT        "Copyright (c) 2016, photom"
+
+#define RC_FILE_DESCRIPTION_STR    "Redis cache module for Apache2"
+
+#define RC_VERSION_BUILD           0
+#define RC_FILE_VERSION            MOD_SOCACHE_REDIS_VERSION_MAJOR ##, ##MOD_SOCACHE_REDIS_VERSION_MINOR ##, \
+                                   ##MOD_SOCACHE_REDIS_VERSION_REVISION ##, ##RC_VERSION_BUILD
+
+#define RC_FILE_VERSION_STR        APR_STRINGIFY(MOD_SOCACHE_REDIS_VERSION_MAJOR)        \
+                                    "." APR_STRINGIFY(MOD_SOCACHE_REDIS_VERSION_MINOR)    \
+                                    "." APR_STRINGIFY(MOD_SOCACHE_REDIS_VERSION_REVISION) 
+
+#define RC_PRODUCTNAME_STR         "mod_socache_redis"
+#define RC_PRODUCT_VERSION         RC_FILE_VERSION
+#define RC_PRODUCT_VERSION_STR     RC_FILE_VERSION_STR
+#define RC_FILENAME_STR            "mod_socache_redis.so"
+
+1 VERSIONINFO
+ FILEVERSION RC_FILE_VERSION
+ PRODUCTVERSION RC_FILE_VERSION
+ FILEFLAGSMASK 0x3fL
+#if RC_SERVER_DEVBUILD_BOOLEAN
+#if defined(_DEBUG)
+ FILEFLAGS (0x03L)
+#else
+ FILEFLAGS (0x02L)
+#endif
+#else
+#if defined(_DEBUG)
+ FILEFLAGS 0x01L
+#else
+ FILEFLAGS 0x00L
+#endif
+#endif
+
+#if defined(WINNT) || defined(WIN64)
+ FILEOS 0x40004L
+#else
+ FILEOS 0x4L
+#endif
+
+#if defined(APP_FILE)
+ FILETYPE 0x1L
+#else
+ FILETYPE 0x2L
+#endif
+
+ FILESUBTYPE 0x0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904b0"
+    BEGIN
+      VALUE "Comments", RC_COMMENTS "\0"
+      VALUE "CompanyName", RC_ORIGINAL_AUTHOR_COMPANY "\0"
+      VALUE "FileDescription", RC_FILE_DESCRIPTION_STR "\0"
+      VALUE "FileVersion", RC_FILE_VERSION_STR "\0"
+      VALUE "InternalName", RC_FILENAME_STR "\0"
+      VALUE "LegalCopyright", RC_AUTHOR_COPYRIGHT "\0"
+      VALUE "OriginalFilename", RC_FILENAME_STR "\0"
+      VALUE "ProductName", RC_PRODUCTNAME_STR "\0"
+      VALUE "ProductVersion", RC_PRODUCT_VERSION_STR "\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END
