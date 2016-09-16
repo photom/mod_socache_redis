@@ -108,14 +108,12 @@ static apr_status_t make_server_dead(apr_redis_t *mc, apr_redis_server_t *ms)
 #if APR_HAS_THREADS
     apr_thread_mutex_unlock(ms->lock);
 #endif
-    ap_log_perror(APLOG_MARK, APLOG_NOERRNO|APLOG_NOTICE, APR_SUCCESS, mc->p, "make_server_dead host:%s:%d", ms->host, ms->port);
     return APR_SUCCESS;
 }
 
 static apr_status_t make_server_live(apr_redis_t *mc, apr_redis_server_t *ms)
 {
     ms->status = APR_MC_SERVER_LIVE; 
-    ap_log_perror(APLOG_MARK, APLOG_NOERRNO|APLOG_NOTICE, APR_SUCCESS, mc->p, "make_server_live host:%s:%d", ms->host, ms->port);
     return APR_SUCCESS;
 }
 
@@ -126,7 +124,6 @@ APU_DECLARE(apr_status_t) apr_redis_add_server(apr_redis_t *mc, apr_redis_server
     if(mc->ntotal >= mc->nalloc) {
         return APR_ENOMEM;
     }
-    ap_log_perror(APLOG_MARK, APLOG_NOERRNO|APLOG_NOTICE, APR_SUCCESS, mc->p, "apr_redis_add_server host:%s:%d", ms->host, ms->port);
     mc->live_servers[mc->ntotal] = ms;
     mc->ntotal++;
     make_server_live(mc, ms);
@@ -614,7 +611,6 @@ apr_redis_setex(apr_redis_t *mc,
     apr_size_t klen = strlen(key);
 
     if (data_size >= BUFFER_SIZE) {
-        ap_log_perror(APLOG_MARK, APLOG_NOERRNO|APLOG_NOTICE, APR_SUCCESS, mc->p, "apr_redis_set: exceed maxdatasize. size:%zu", data_size);
         return APR_NOTFOUND;
     }
 
